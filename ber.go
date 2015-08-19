@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"reflect"
 )
 
@@ -32,14 +31,23 @@ func parseInteger(v reflect.Value, b []byte) error {
 		return &TypeError{TagInteger, v.Kind()}
 	}
 
-	val, n := binary.Uvarint(b)
-	log.Printf("%x", b)
-	if n == 0 {
-		return errors.New("could not decode int: buff too small")
-	} else if n < 0 {
-		return errors.New("coudl not decode int: overflow")
+	if len(b) > 8 {
+		return errors.New("value does not fit in a int64")
 	}
-	reflect.Value(v).SetInt(int64(val))
+
+	var n int64
+	for i, v := range b {
+		shift := uint((len(b) - i - 1) * 8)
+		if i == 0 {
+			if v&0x80 != 0 {
+				n -= 0x80 << shift
+				v &= 0x7f
+			}
+		}
+		n += int64(v) << shift
+	}
+
+	reflect.Value(v).SetInt(n)
 	return nil
 }
 

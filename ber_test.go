@@ -7,27 +7,23 @@ type Human struct {
 	Age  int
 }
 
-func TestUnmarshal(t *testing.T) {
-	input := []byte{0x02, 0x01, 0x05}
-	var i int
-	if err := Unmarshal(input, &i); err != nil {
-		t.Fatal(err)
+func TestUnmarshalInteger(t *testing.T) {
+	tests := []struct {
+		raw []byte
+		exp int64
+	}{
+		{[]byte{0x02, 0x08, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 72057594037927935},
+		{[]byte{0x02, 0x01, 0x05}, 5},
+		{[]byte{0x02, 0x01, 0xfc}, -4},
 	}
-	if i != 5 {
-		t.Errorf("expected 5 got %d", i)
-	}
-
-	input = []byte{0x02, 0x01, 0xfc}
-	if err := Unmarshal(input, &i); err != nil {
-		t.Fatal(err)
-	}
-	if i != -4 {
-		t.Errorf("expected -4 got %d", i)
-	}
-}
-
-func TestType(t *testing.T) {
-	if err := Unmarshal([]byte{}, 5); err == nil {
-		t.Errorf("expected int to return an error, got nil")
+	for _, test := range tests {
+		var i int64
+		if err := Unmarshal(test.raw, &i); err != nil {
+			t.Errorf("could not unmarshal: %d: %v", test.exp, err)
+			continue
+		}
+		if test.exp != i {
+			t.Errorf("expected %d got %d", test.exp, i)
+		}
 	}
 }
